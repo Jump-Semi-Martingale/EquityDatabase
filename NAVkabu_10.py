@@ -77,36 +77,18 @@ if __name__ == '__main__':
     
     date_str='2016-06-01'
     codelist = getCODE(date_str)
-    codelist = codelist[1:3]#とりま２行分
+    #codelist = codelist[1:3]#とりま２行分
     
-    #print len(codelist)
-    #print codelist[0],codelist[1]
-    # dictにcodelistを順に突っ込む
-    
-    rowsDB=[]
+    #rowsDB=[]
     for i in range(0, len(codelist),1):
         args = dict(fundcode=codelist[i], year='2016')
         rows = getNAV(**args)
 
-        if i == 0:
-            rowsDB=rows
-        else:
-            rowsDB.extend(rows)
+        for j in range(0,len(rows),1):
+            tmp=rows[j]
+            postDB(tmp)
 
-
-    #tmp=rowsDB[0]
-    #print tmp
-    #print len(rowsDB)
-    Num = len(rowsDB)
-    print Num
-
-    #tmp = rowsDB[0]
-    #print tmp
-    #postDB(tmp)
-    for j in range(0,Num):
-        tmp = rowsDB[j]
-        print tmp
-        postDB(tmp)
+        #time.sleep(1) #1秒待機
 
 
 
