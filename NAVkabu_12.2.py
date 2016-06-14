@@ -84,7 +84,7 @@ if __name__ == '__main__':
     #codelist = codelist[0:1] #とりま1銘柄分
     #print(len(codelist))
     #print(codelist)
-    
+
     #rowsDB=[]
     rows=[]
     for i in range(0, len(codelist),1):
@@ -96,7 +96,6 @@ if __name__ == '__main__':
             #tmp=rows[0]
             #print(tmp)
             postDB(tmp)
-
         
 
 """
