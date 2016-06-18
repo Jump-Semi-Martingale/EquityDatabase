@@ -5,38 +5,26 @@ from lxml import etree
 import datetime
 import json
 import requests
+#import time
+#import csv
 from bs4 import BeautifulSoup
+import urllib2
 from stem import Signal
 from stem.control import Controller
-#import requesocks
-#import csv
+import requesocks
 
-
-
-def newIdentity(self):
-    socks.setdefaultproxy()
-    s= socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s.connect(("127.0.0.1", 9051))
-    s.send('AUTHENTICATE "Akihiko_1234" \r\n')
-    response = s.recv(128)
-    if response.startswith("250"):
-        s.send("SETCONF ExitNodes={in}\r\n")
-        s.send("SETCONF StrictNodes=1\r\n")
-        s.send("SIGNAL NEWNYM\r\n")
-    s.close()
-    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050)
-    socket.socket = socks.socksocket
 
 def getCODE(date_str):
-    #with Controller.from_port(port = 9051) as controller:
-    #    controller.authenticate(password='Akihiko_1234')
-    #    controller.signal(Signal.NEWNYM)
     
     url = 'http://k-db.com/stocks/{date_str}'
     req = urllib2.Request(url)
     req.add_header('User-agent', 'Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03S) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Safari/535.19')
     html = urllib2.urlopen(req).read()
     tree = lxml.html.fromstring(html)
+    
+    #tree = lxml.html.parse(url)
+    
+    # 日付, 基準価額, 純資産の要素をすべて取得しつつ、mapを適用してutf-8化とカンマ除去
     contents = map(lambda html: html.text.encode('utf-8'), tree.xpath('//*[@id="maintable"]//td/a'))
     
     res = []
@@ -48,33 +36,25 @@ def getCODE(date_str):
     return res
 
 def getNAV(fundcode, year):
-    #with Controller.from_port(port = 9051) as controller:
-    #    controller.authenticate(password='Akihiko_1234')
-    #    controller.signal(Signal.NEWNYM)
     
+    # 引数をdictに突っ込む
     d = dict(fundcode=fundcode, year=year)
-    #newIdentity()
-
-    socks.setdefaultproxy()
-    s= socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s.connect(("127.0.0.1", 9051))
-    s.send('AUTHENTICATE "Akihiko_1234" \r\n')
-    response = s.recv(128)
-    if response.startswith("250"):
-        s.send("SETCONF ExitNodes={in}\r\n")
-        s.send("SETCONF StrictNodes=1\r\n")
-        s.send("SIGNAL NEWNYM\r\n")
-    s.close()
-    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050)
-    socket.socket = socks.socksocket
     
+    # dictをアンパックしてURL生成
     url = 'http://k-db.com/stocks/{fundcode}-T/1d/{year}'.format(**d)
+    
+    
     req = urllib2.Request(url)
     req.add_header('User-agent', 'Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03S) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Safari/535.19')
     html = urllib2.urlopen(req).read()
     tree = lxml.html.fromstring(html)
+    # ElementTreeを取得
+    #tree = lxml.html.parse(url)
+    
+    # 要素全て取得
     contents = map(lambda html: html.text, tree.xpath('//*[@id="maintable"]//td'))
-
+    #print contents
+    # ひとつのリストになっているので[[date, price, cap], [date, price, cap], ...]と分ける
     res = []
     for i in range(0, len(contents)-1, 9):
         t_date = contents[i]   #文字列なのでjson形式にする場合でも問題ない
@@ -92,45 +72,65 @@ def getNAV(fundcode, year):
         key_id=temp+temp2
         jsondata = {'key_id':key_id, 't_date':t_date, 'sec_code':sec_code, 'start_price':start_price, 'max_price':max_price, 'min_price':min_price,'end_price':end_price,'trade_volume':trade_volume,'trade_amount':trade_amount}
         res.append(jsondata)
-    socks.setdefaultproxy()
     return res
 
 
 def postDB(post_data):
     response = requests.post('http://54.199.174.85:3000/api/equities', post_data)
+    #レスポンスオブジェクトのjsonメソッドを使うと、
+    #JSONデータをPythonの辞書オブジェクトに変換して取得できる
+    #pprint.pprint(response.json())
 
-
-
-
+                             
 if __name__ == '__main__':
-    #session = requesocks.session()
-    #session.proxies = {'http':  'socks5://127.0.0.1:9050','https': 'socks5://127.0.0.1:9050'}
-    #print session.get('http://httpbin.org/ip').text
-    
+    session = requesocks.session()
+    session.proxies = {'http':  'socks5://127.0.0.1:9050','https': 'socks5://127.0.0.1:9050'}
+    print session.get("http://httpbin.org/ip").text
+    with Controller.from_port(port = 9051) as controller:
+        controller.authenticate(password='Akihiko_1234')
+        print('Success!')
+        controller.signal(Signal.NEWNYM)
+        print('New Tor connection processed')
+        print session.get("http://httpbin.org/ip").text
     date_str='2016-06-10'
-    import socks
-    import socket
-    import urllib2
-    codelist=getCODE(date_str)
+    #codelist=getCODE(date_str)
     #print(codelist)
-    codelist=codelist[1229:]#79名柄分[0:78]終わっている
+    
+    
+    #codelist=codelist[79:]#79名柄分[0:78]終わっている
+    
+"""
     #codelist = codelist[0:1] #とりま1銘柄分
+    #print(len(codelist))
     #print(codelist)
+
+    #rowsDB=[]
     rows=[]
     for i in range(0, len(codelist),1):
         args = dict(fundcode=codelist[i], year='2016') #fundnameをここに追加したい
         rows = getNAV(**args)
-        import socks
-        import socket
-        import urllib2
+
         for j in range(0,len(rows),1):
             tmp=rows[j]
-            print(tmp)
+            #tmp=rows[0]
+            #print(tmp)
             postDB(tmp)
+"""
 
 
 """
-    with open('Test_Codelist.csv', 'w') as f:
-    writer = csv.writer(f)  # writerオブジェクトを作成
-    writer.writerows(codelist)  # 内容を書き込む
+    
+    with Controller.from_port(port = 9051) as controller:
+    controller.authenticate('Akihiko_1234')  # provide the password here if you set one
+    bytes_read = controller.get_info('traffic/read')
+    bytes_written = controller.get_info('traffic/written')
+    
+    print('My Tor relay has read %s bytes and written %s.' % (bytes_read, bytes_written))
     """
+"""
+    #torが機能してるかテスト
+    
+    #torが機能してるかテストkokomade
+"""
+
+
