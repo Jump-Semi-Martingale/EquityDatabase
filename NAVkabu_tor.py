@@ -113,7 +113,7 @@ if __name__ == '__main__':
     import urllib2
     codelist=getCODE(date_str)
     #print(codelist)
-    codelist=codelist[1229:]#79名柄分[0:78]終わっている
+    codelist=codelist[2244:]#79名柄分[0:78]終わっている1950から
     #codelist = codelist[0:1] #とりま1銘柄分
     #print(codelist)
     rows=[]
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         import urllib2
         for j in range(0,len(rows),1):
             tmp=rows[j]
-            print(tmp)
+            #print(tmp)
             postDB(tmp)
 
 

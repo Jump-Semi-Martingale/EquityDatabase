@@ -4,7 +4,7 @@ import lxml.html
 import datetime
 import json
 import requests
-
+import re
 
 def getCA():
     url = 'http://minkabu.jp/top/stock_news'
@@ -22,13 +22,19 @@ def getCA():
         if contents[i+4]==0:
             j=j+1
         else:
-            update_date=contents[i]
-            corp_date=contents[i+2]
+            update_date=contents[i].replace('/','-')
+            corp_date=contents[i+2].replace('/','-')
             hold=contents[i+4].split(':')
-            corp_rate=float(hold[0])/float(hold[1])
+            corp_rate=float(hold[1])/float(hold[0])
             corp_name=contents2[j].encode('utf-8')
+            corp_name=re.findall('\([0-9]+[0-9]+[0-9]+[0-9]+\)', corp_name)
+            corp_name=re.findall('[0-9]+[0-9]+[0-9]+[0-9]+', corp_name[0])
+            corp_name=corp_name[0]
+            temp=str(corp_name)
+            temp2=corp_date.replace('-','')
+            key_id=temp+temp2
             j=j+1
-            jsondata={'update_date':update_date, 'corp_date':corp_date, 'corp_rate':corp_rate, 'corp_name':corp_name}
+            jsondata={'update_date':update_date, 'corp_date':corp_date, 'corp_rate':corp_rate, 'corp_name':corp_name,'key_id':key_id}
             res.append(jsondata)
 
     print(res)
@@ -36,12 +42,11 @@ def getCA():
 
 
 def postDB(post_data):
-    response = requests.post('http://54.199.174.85:3000/api/ca', post_data)
+    response = requests.post('http://54.199.174.85:3000/api/cas', post_data)
 
                              
 if __name__ == '__main__':
-    res=getCA()
+    rows=getCA()
     for i in range(0,len(rows),1):
-        tmp=res[i]
+        tmp=rows[i]
         postDB(tmp)
-
